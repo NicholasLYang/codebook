@@ -1,17 +1,32 @@
-# foo
-bar
+# Basic Example
 
-```rust create: src/main.rs
-fn main() {
+Let's create a new file `src/hello.rs` and add a simple `println!` to it:
+
+```rust create: src/hello.rs
+pub fn hello() {
     println!("Hello, world!");
 }
 ```
 
-## bar
+Now let's add it as a module to the main file and call the function:
 
-```rust insert: src/main.rs@1
+```rust insert: src/main.rs@0
++mod hello;
+fn main() {
 -    println!("Hello, world!");
-+    println!("Hello, world! 2");
++    hello::hello();    
+}
 ```
 
+And finally, because this example shouldn't introduce changes, let's undo everything
+
+```rust insert: src/main.rs@0
+-mod hello;
+fn main() {
++    println!("Hello, world!");    
+}
+```
+
+```rust delete: src/hello.rs
+```
 
