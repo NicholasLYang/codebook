@@ -3,6 +3,7 @@ mod config;
 use anyhow::anyhow;
 use camino::{Utf8Path, Utf8PathBuf};
 use clap::{Parser, Subcommand};
+use colored::Colorize;
 use ignore::Walk;
 use markdown::mdast::Node;
 use markdown::ParseOptions;
@@ -216,7 +217,7 @@ fn check_each_snippet(
 
         let output = command.output()?;
         if !output.status.success() {
-            println!("Snippet #{} failed", idx);
+            println!("{}", format!("Snippet #{} failed", idx).red().bold());
             println!(
                 "{}",
                 anyhow!(
@@ -226,7 +227,7 @@ fn check_each_snippet(
                 )
             );
         } else {
-            println!("snippet #{} passed", idx);
+            println!("{}", format!("snippet #{} passed", idx).blue().bold());
             println!("{}", String::from_utf8_lossy(&output.stdout));
         }
     }

@@ -18,10 +18,10 @@ fn main() {
 }
 ```
 
-And finally, because this example shouldn't introduce changes, let's undo everything
+And finally, let's undo everything
 
 ```diff insert: src/main.rs@0
-- diff hello;
+- mod hello;
 fn main() {
 -     hello::hello();    
 +     println!("Hello, world!");
@@ -30,4 +30,3 @@ fn main() {
 
 ```rust delete: src/hello.rs
 ```
-
