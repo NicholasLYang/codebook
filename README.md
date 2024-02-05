@@ -21,7 +21,7 @@ There are three actions: Create, Delete and Edit. Create and Delete
 respectively create and delete files. Edit adds or deletes text in 
 an existing file.
 
-````toml create: examples/getting-started/chapter-1.md
+````markdown create: examples/getting-started/chapter-1.md
 ```rust create: src/main.rs
 fn main() {
     println!("Hello, world!");
