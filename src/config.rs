@@ -7,7 +7,7 @@ pub struct Config {
 }
 
 #[derive(Debug, Deserialize)]
-struct TestConfig {
+pub struct TestConfig {
     pub command: String,
 }
 

@@ -52,10 +52,10 @@ impl Snippet {
         let edits = content
             .lines()
             .map(|line| {
-                if line.starts_with('+') {
+                if let Some(line) = line.strip_prefix("+ ") {
                     has_no_inserts_or_deletes = false;
                     Edit::Insert(line.to_string())
-                } else if line.starts_with('-') {
+                } else if let Some(line) = line.strip_prefix("- ") {
                     has_no_inserts_or_deletes = false;
                     Edit::Delete(line.to_string())
                 } else {
@@ -178,11 +178,11 @@ fn check_each_snippet(
                 for edit in &edits {
                     match edit {
                         Edit::Insert(line) => {
-                            lines.insert(idx, &line[1..]);
+                            lines.insert(idx, line);
                             idx += 1;
                         }
                         Edit::Delete(content) => {
-                            if lines.get(idx) != Some(&&content[1..]) {
+                            if lines.get(idx) != Some(&(content.as_str())) {
                                 return Err(anyhow!(
                                     "expected line to delete {} but found {}",
                                     &content[1..],
