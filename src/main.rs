@@ -1,6 +1,6 @@
 mod config;
 
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use camino::{Utf8Path, Utf8PathBuf};
 use clap::{Parser, Subcommand};
 use colored::Colorize;
@@ -20,12 +20,12 @@ struct Args {
 
 #[derive(Subcommand, Debug, Clone)]
 enum Command {
-    Check { file: Utf8PathBuf },
+    Check,
 }
 
 #[derive(Debug)]
-enum Edit {
-    Insert(String),
+enum EditLine {
+    Add(String),
     Delete(String),
     Keep(String),
 }
@@ -33,10 +33,10 @@ enum Edit {
 #[derive(Debug)]
 enum Snippet {
     // Inserts the content at the given line in the file
-    InsertAt {
+    Edit {
         file: Utf8PathBuf,
         line: usize,
-        edits: Vec<Edit>,
+        edit_lines: Vec<EditLine>,
     },
     Create {
         path: Utf8PathBuf,
@@ -48,19 +48,19 @@ enum Snippet {
 }
 
 impl Snippet {
-    fn parse_content_for_insert(content: &str) -> Vec<Edit> {
+    fn parse_edit_content(content: &str) -> Vec<EditLine> {
         let mut has_no_inserts_or_deletes = true;
         let edits = content
             .lines()
             .map(|line| {
                 if let Some(line) = line.strip_prefix("+ ") {
                     has_no_inserts_or_deletes = false;
-                    Edit::Insert(line.to_string())
+                    EditLine::Add(line.to_string())
                 } else if let Some(line) = line.strip_prefix("- ") {
                     has_no_inserts_or_deletes = false;
-                    Edit::Delete(line.to_string())
+                    EditLine::Delete(line.to_string())
                 } else {
-                    Edit::Keep(line.to_string())
+                    EditLine::Keep(line.to_string())
                 }
             })
             .collect();
@@ -79,17 +79,17 @@ impl Snippet {
         ))?;
 
         match action {
-            "insert" => {
+            "edit" => {
                 let (file, line) = s.split_once('@').ok_or(anyhow!(
                     "expected location with format <file>@<line> instead received {}",
                     s
                 ))?;
                 let line = line.parse::<usize>()?;
-                let edits = Snippet::parse_content_for_insert(content);
+                let edits = Snippet::parse_edit_content(content);
 
-                Ok(Snippet::InsertAt {
+                Ok(Snippet::Edit {
                     file: Utf8PathBuf::from(file.trim()),
-                    edits,
+                    edit_lines: edits,
                     line,
                 })
             }
@@ -113,22 +113,26 @@ impl Snippet {
 fn main() -> Result<(), anyhow::Error> {
     let args = Args::parse();
     match args.command {
-        Command::Check { file } => {
+        Command::Check => {
             let cwd = if let Some(cwd) = args.cwd {
                 cwd
             } else {
                 Utf8PathBuf::try_from(std::env::current_dir()?)?
             };
 
-            let file = cwd.join(file);
-
-            let file_content = fs::read_to_string(&file)?;
-            let ast = markdown::to_mdast(&file_content, &ParseOptions::default()).unwrap();
-            let snippets = get_snippets(&ast)?;
-
-            let config = config::Config::load(cwd.as_std_path())?;
-
-            check_each_snippet(&cwd, &config.test.command, snippets)?;
+            let config =
+                config::Config::load(cwd.as_std_path()).context("could not load codebook.toml")?;
+            for file in config.files {
+                let file = cwd.join(file);
+                let file_content = fs::read_to_string(&file)?;
+                let ast = markdown::to_mdast(&file_content, &ParseOptions::default()).unwrap();
+                let snippets = get_snippets(&ast)?;
+                check_each_snippet(
+                    &cwd,
+                    config.test.as_ref().and_then(|t| t.command.as_deref()),
+                    snippets,
+                )?;
+            }
         }
     }
     Ok(())
@@ -152,7 +156,7 @@ fn copy_dir(src: &Path, dest: &Path) -> Result<(), anyhow::Error> {
 
 fn check_each_snippet(
     cwd: &Utf8Path,
-    check_command: &str,
+    test_command: Option<&str>,
     snippets: Vec<Snippet>,
 ) -> Result<(), anyhow::Error> {
     // Copy everything to a temp directory to avoid side effects.
@@ -161,16 +165,24 @@ fn check_each_snippet(
 
     let cwd = tempdir.path();
 
-    let command_tokens = shlex::split(check_command).ok_or(anyhow!(
-        "failed to parse command {} into tokens",
-        check_command
-    ))?;
-    let mut command = std::process::Command::new(&command_tokens[0]);
-    command.args(&command_tokens[1..]).current_dir(cwd);
+    let mut command = if let Some(command) = test_command {
+        let command_tokens = shlex::split(command)
+            .ok_or(anyhow!("failed to parse command {} into tokens", command))?;
+        let mut command = std::process::Command::new(&command_tokens[0]);
+        command.args(&command_tokens[1..]).current_dir(cwd);
+
+        Some(command)
+    } else {
+        None
+    };
 
     for (idx, snippet) in snippets.into_iter().enumerate() {
         match snippet {
-            Snippet::InsertAt { file, line, edits } => {
+            Snippet::Edit {
+                file,
+                line,
+                edit_lines: edits,
+            } => {
                 let file = cwd.join(file);
 
                 let content = fs::read_to_string(&file)?;
@@ -178,11 +190,11 @@ fn check_each_snippet(
                 let mut idx = line;
                 for edit in &edits {
                     match edit {
-                        Edit::Insert(line) => {
+                        EditLine::Add(line) => {
                             lines.insert(idx, line);
                             idx += 1;
                         }
-                        Edit::Delete(content) => {
+                        EditLine::Delete(content) => {
                             if lines.get(idx) != Some(&(content.as_str())) {
                                 return Err(anyhow!(
                                     "expected line to delete {} but found {}",
@@ -192,12 +204,12 @@ fn check_each_snippet(
                             }
                             lines.remove(idx);
                         }
-                        Edit::Keep(content) => {
+                        EditLine::Keep(content) => {
                             if lines.get(idx) != Some(&(content.as_str())) {
                                 return Err(anyhow!(
-                                    "expected line to keep {} but found {}",
+                                    "expected line to be {} but found {}",
                                     &content,
-                                    lines.get(idx).unwrap()
+                                    lines.get(idx).unwrap_or(&"end of file")
                                 ));
                             }
                             idx += 1;
@@ -215,20 +227,24 @@ fn check_each_snippet(
             }
         }
 
-        let output = command.output()?;
-        if !output.status.success() {
-            println!("{}", format!("Snippet #{} failed", idx).red().bold());
-            println!(
-                "{}",
-                anyhow!(
-                    "command failed with status {}: {}",
-                    output.status,
-                    String::from_utf8_lossy(&output.stderr)
-                )
-            );
+        if let Some(command) = &mut command {
+            let output = command.output()?;
+            if !output.status.success() {
+                println!("{}", format!("Snippet #{} failed", idx).red().bold());
+                println!(
+                    "{}",
+                    anyhow!(
+                        "command failed with status {}: {}",
+                        output.status,
+                        String::from_utf8_lossy(&output.stderr)
+                    )
+                );
+            } else {
+                println!("{}", format!("snippet #{} passed", idx).blue().bold());
+                println!("{}", String::from_utf8_lossy(&output.stdout));
+            }
         } else {
             println!("{}", format!("snippet #{} passed", idx).blue().bold());
-            println!("{}", String::from_utf8_lossy(&output.stdout));
         }
     }
 

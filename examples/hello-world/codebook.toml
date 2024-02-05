@@ -1,2 +1,4 @@
+files = ["README.md"]
+
 [test]
 command = "cargo run"
