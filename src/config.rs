@@ -3,7 +3,12 @@ use std::path::Path;
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
-    pub test_command: String,
+    pub test: TestConfig,
+}
+
+#[derive(Debug, Deserialize)]
+struct TestConfig {
+    pub command: String,
 }
 
 impl Config {

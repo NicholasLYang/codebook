@@ -127,7 +127,7 @@ fn main() -> Result<(), anyhow::Error> {
 
             let config = config::Config::load(cwd.as_std_path())?;
 
-            check_each_snippet(&cwd, &config.test_command, snippets)?;
+            check_each_snippet(&cwd, &config.test.command, snippets)?;
         }
     }
     Ok(())
