@@ -28,7 +28,7 @@ fn main() {
 }
 ```
 
-```rust edit: src/main.rs@1
+```diff edit: src/main.rs@1
 -    println!("Hello, world!");
 +    println!("Goodbye, world!");
 ```
@@ -37,11 +37,12 @@ fn main() {
 ```
 ````
 
-Note that edit requires a line number after the file path to indicate where the edits should begin.
+Note that edit requires a line number after the file path to indicate where the edits should begin. Also,
+if you want pretty diffs on GitHub, you should change the language in the code block to `diff`.
 
 Then, add a test command to run on each snippet:
 
-````toml edit: examples/getting-started/codebook.toml@1
+````diff edit: examples/getting-started/codebook.toml@1
 + [test]
 + command = "cargo check"
 ````
