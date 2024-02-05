@@ -48,3 +48,19 @@ Then, add a test command to run on each snippet:
 ````
 
 And run `codebook check` to verify all the snippets!
+
+## TODO
+
+Codebook is very new. Here are some planned goals:
+
+- Write snippets in other file formats like JSX or HTML.
+- Allow users to check out the code at each snippet.
+- Compile the files into a nicer tutorial output.
+
+## Acknowledgements
+
+Codebook is inspired by [Bob Nystrom](https://github.com/munificent)'s wonderful book, 
+[Crafting Interpreters](https://craftinginterpreters.com/) and its always correct code snippets.
+Bob wrote about the book's build system in [this post](https://journal.stuffwithstuff.com/2020/04/05/crafting-crafting-interpreters/),
+which inspired me to try my own take on it. Thanks Bob!
+

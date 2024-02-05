@@ -97,14 +97,9 @@ impl Snippet {
                 path: Utf8PathBuf::from(s.trim()),
                 content: content.to_string(),
             }),
-            "delete" => {
-                if !content.is_empty() {
-                    println!("warning: content will be ignored for delete action")
-                }
-                Ok(Snippet::Delete {
-                    path: Utf8PathBuf::from(s.trim()),
-                })
-            }
+            "delete" => Ok(Snippet::Delete {
+                path: Utf8PathBuf::from(s.trim()),
+            }),
             _ => Err(anyhow!("unknown action {}", action)),
         }
     }
