@@ -10,7 +10,7 @@ pub fn hello() {
 
 Now let's add it as a module to the main file and call the function:
 
-```rust insert: src/main.rs@0
+```diff insert: src/main.rs@0
 + mod hello;
 fn main() {
 -     println!("Hello, world!");
@@ -20,8 +20,8 @@ fn main() {
 
 And finally, because this example shouldn't introduce changes, let's undo everything
 
-```rust insert: src/main.rs@0
-- mod hello;
+```diff insert: src/main.rs@0
+- diff hello;
 fn main() {
 -     hello::hello();    
 +     println!("Hello, world!");
