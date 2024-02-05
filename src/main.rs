@@ -3,9 +3,11 @@ mod config;
 use anyhow::anyhow;
 use camino::{Utf8Path, Utf8PathBuf};
 use clap::{Parser, Subcommand};
+use ignore::Walk;
 use markdown::mdast::Node;
 use markdown::ParseOptions;
 use std::fs;
+use std::path::Path;
 
 #[derive(Parser, Debug)]
 struct Args {
@@ -131,11 +133,33 @@ fn main() -> Result<(), anyhow::Error> {
     Ok(())
 }
 
+fn copy_dir(src: &Path, dest: &Path) -> Result<(), anyhow::Error> {
+    fs::create_dir_all(dest)?;
+    for entry in Walk::new(src) {
+        let entry = entry?;
+        let path = entry.path();
+        let relative = path.strip_prefix(src)?;
+        let dest = dest.join(relative);
+        if entry.metadata()?.is_dir() {
+            fs::create_dir_all(&dest)?;
+        } else {
+            fs::copy(&path, &dest)?;
+        }
+    }
+    Ok(())
+}
+
 fn check_each_snippet(
     cwd: &Utf8Path,
     check_command: &str,
     snippets: Vec<Snippet>,
 ) -> Result<(), anyhow::Error> {
+    // Copy everything to a temp directory to avoid side effects.
+    let tempdir = tempfile::tempdir()?;
+    copy_dir(cwd.as_std_path(), tempdir.path())?;
+
+    let cwd = tempdir.path();
+
     let command_tokens = shlex::split(check_command).ok_or(anyhow!(
         "failed to parse command {} into tokens",
         check_command
@@ -192,11 +216,15 @@ fn check_each_snippet(
 
         let output = command.output()?;
         if !output.status.success() {
-            return Err(anyhow!(
-                "command failed with status {}: {}",
-                output.status,
-                String::from_utf8_lossy(&output.stderr)
-            ));
+            println!("Snippet #{} failed", idx);
+            println!(
+                "{}",
+                anyhow!(
+                    "command failed with status {}: {}",
+                    output.status,
+                    String::from_utf8_lossy(&output.stderr)
+                )
+            );
         } else {
             println!("snippet #{} passed", idx);
             println!("{}", String::from_utf8_lossy(&output.stdout));

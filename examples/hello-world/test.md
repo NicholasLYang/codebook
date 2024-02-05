@@ -4,7 +4,7 @@ Let's create a new file `src/hello.rs` and add a simple `println!` to it:
 
 ```rust create: src/hello.rs
 pub fn hello() {
-    println!("Hello, world!");
+    println!("Hello hello!");
 }
 ```
 
@@ -23,7 +23,8 @@ And finally, because this example shouldn't introduce changes, let's undo everyt
 ```rust insert: src/main.rs@0
 -mod hello;
 fn main() {
-+    println!("Hello, world!");    
+-    hello::hello();    
++    println!("Hello, world!");
 }
 ```
 
