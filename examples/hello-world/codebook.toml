@@ -1,1 +1,1 @@
-test_command = "cargo check"
+test_command = "cargo run"

@@ -143,9 +143,11 @@ fn check_each_snippet(
     let mut command = std::process::Command::new(&command_tokens[0]);
     command.args(&command_tokens[1..]).current_dir(cwd);
 
-    for snippet in snippets {
+    for (idx, snippet) in snippets.into_iter().enumerate() {
         match snippet {
             Snippet::InsertAt { file, line, edits } => {
+                let file = cwd.join(file);
+
                 let content = fs::read_to_string(&file)?;
                 let mut lines: Vec<&str> = content.lines().collect();
                 let mut idx = line;
@@ -181,10 +183,10 @@ fn check_each_snippet(
                 fs::write(&file, lines.join("\n"))?;
             }
             Snippet::Create { path, content } => {
-                fs::write(&path, content)?;
+                fs::write(cwd.join(&path), content)?;
             }
             Snippet::Delete { path } => {
-                fs::remove_file(&path)?;
+                fs::remove_file(cwd.join(&path))?;
             }
         }
 
@@ -195,6 +197,9 @@ fn check_each_snippet(
                 output.status,
                 String::from_utf8_lossy(&output.stderr)
             ));
+        } else {
+            println!("snippet #{} passed", idx);
+            println!("{}", String::from_utf8_lossy(&output.stdout));
         }
     }
 
