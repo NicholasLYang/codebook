@@ -6,6 +6,7 @@ use anyhow::{anyhow, Context};
 use camino::{Utf8Path, Utf8PathBuf};
 use clap::{Parser, Subcommand};
 use clean_path::clean;
+use colored::Colorize;
 use dialoguer::FuzzySelect;
 use ignore::Walk;
 use std::fs;
@@ -103,7 +104,11 @@ fn main() -> Result<(), anyhow::Error> {
                 out_dir.as_std_path(),
                 snippets[..=snippet_idx].to_vec(),
                 |idx| {
-                    println!("applying snippet #{} in {}", idx, file);
+                    println!(
+                        "{} in {}",
+                        format!("applying snippet #{}", idx).blue().bold(),
+                        file
+                    );
                     Ok(())
                 },
             )?;
