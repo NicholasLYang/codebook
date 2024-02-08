@@ -29,4 +29,5 @@ fn main() {
 ```
 
 ```rust delete: src/hello.rs
+Delete src/hello.rs
 ```

@@ -56,6 +56,7 @@ Codebook is very new. Here are some planned goals:
 - Write snippets in other file formats like JSX or HTML.
 - Allow users to check out the code at each snippet.
 - Compile the files into a nicer tutorial output.
+- Add ability to skip a snippet
 
 ## Acknowledgements
 
