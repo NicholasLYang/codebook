@@ -54,7 +54,7 @@ And run `codebook check` to verify all the snippets!
 Codebook is very new. Here are some planned goals:
 
 - Write snippets in other file formats like JSX or HTML.
-- Allow users to check out the code at each snippet.
+- ~~Allow users to check out the code at each snippet.~~ Implemented with `codebook generate`
 - Compile the files into a nicer tutorial output.
 - Add ability to skip a snippet
 
